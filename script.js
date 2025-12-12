@@ -1,4 +1,69 @@
 document.addEventListener('DOMContentLoaded', function () {
+  // ========== DISCORD STATUS (LANYARD API) ==========
+  async function updateDiscordStatus() {
+    const userId = '659864108895698970';
+    const statusBadge = document.getElementById('discord-status');
+    const statusIndicator = statusBadge.querySelector('.status-indicator');
+    const statusLabel = statusBadge.querySelector('.status-label');
+
+    try {
+      const response = await fetch(`https://api.lanyard.rest/v1/users/${userId}`);
+      const data = await response.json();
+
+      if (data.success) {
+        const { discord_status, activities } = data.data;
+
+        // Update status indicator
+        statusIndicator.className = `status-indicator ${discord_status}`;
+
+        // Update status text
+        const statusTexts = {
+          online: 'Online',
+          idle: 'Idle',
+          dnd: 'Do Not Disturb',
+          offline: 'Offline'
+        };
+
+        statusLabel.textContent = statusTexts[discord_status] || 'Offline';
+
+        // Check for custom status
+        const customStatus = activities.find(activity => activity.type === 4);
+
+        if (customStatus && customStatus.state) {
+          // Add custom status below the main status
+          let activitySpan = statusBadge.querySelector('.status-activity');
+          if (!activitySpan) {
+            activitySpan = document.createElement('span');
+            activitySpan.className = 'status-activity';
+            statusBadge.querySelector('.status-text').appendChild(activitySpan);
+          }
+
+          // Include emoji if present
+          let statusText = '';
+          if (customStatus.emoji) {
+            statusText = customStatus.emoji.name + ' ';
+          }
+          statusText += customStatus.state;
+          activitySpan.textContent = statusText;
+        } else {
+          // Remove activity span if no custom status
+          const activitySpan = statusBadge.querySelector('.status-activity');
+          if (activitySpan) {
+            activitySpan.remove();
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Failed to fetch Discord status:', error);
+      statusLabel.textContent = 'Offline';
+      statusIndicator.className = 'status-indicator offline';
+    }
+  }
+
+  // Update status immediately and every 30 seconds
+  updateDiscordStatus();
+  setInterval(updateDiscordStatus, 30000);
+
   // ========== MATRIX RAIN EFFECT ==========
   const canvas = document.getElementById('matrix');
   const ctx = canvas.getContext('2d');
